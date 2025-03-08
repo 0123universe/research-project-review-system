@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>科研项目评审系统</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background-color: #1e88e5;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .login-form {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 30px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .dashboard {
+            display: none;
+            margin-top: 30px;
+        }
+        .project-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .project-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .project-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .project-details {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        .rating-input {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .rating-input input {
+            width: 60px;
+            margin-left: 10px;
+        }
+        .submit-btn, .login-btn {
+            background-color: #1e88e5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .submit-btn:hover, .login-btn:hover {
+            background-color: #1565c0;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .results-table th, .results-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .results-table th {
+            background-color: #1e88e5;
+            color: white;
+        }
+        .results-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        .tab-nav {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+        }
+        .tab-btn.active {
+            color: #1e88e5;
+            border-bottom: 2px solid #1e88e5;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .file-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            background-color: #fafafa;
+        }
+        .file-upload p {
+            color: #666;
+            margin: 10px 0;
+        }
+        #file-name {
+            font-size: 14px;
+            color: #1e88e5;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>科研项目评审系统</h1>
+    </header>
+    
+    <div class="container">
+        <!-- 登录表单 -->
+        <div class="login-form" id="login-section">
+            <h2>专家登录</h2>
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" placeholder="请输入用户名">
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" placeholder="请输入密码">
+            </div>
+            <button class="login-btn" onclick="login()">登录</button>
+        </div>
+        
+        <!-- 评审仪表板 -->
+        <div class="dashboard" id="dashboard-section">
+            <div class="tab-nav">
+                <button class="tab-btn active" onclick="showTab('projects')">项目评审</button>
+                <button class="tab-btn" onclick="showTab('results')">评审结果</button>
+                <button class="tab-btn" onclick="showTab('upload')">上传项目</button>
+                <button class="tab-btn" onclick="logout()" style="margin-left: auto;">退出登录</button>
+            </div>
+            
+            <!-- 项目评审选项卡 -->
+            <div class="tab-content active" id="projects-tab">
+                <h2>待评审项目</h2>
+                <p id="expert-welcome">欢迎，<span id="expert-name">专家</span></p>
+                <div class="project-list" id="project-list">
+                    <!-- 项目卡片将通过JS动态生成 -->
+                </div>
+                <button class="submit-btn" style="margin-top: 20px;" onclick="submitRatings()">提交所有评分</button>
+            </div>
+            
+            <!-- 评审结果选项卡 -->
+            <div class="tab-content" id="results-tab">
+                <h2>项目评审结果</h2>
+                <p>所有专家评分的汇总结果排名：</p>
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>排名</th>
+                            <th>项目名称</th>
+                            <th>平均分</th>
+                            <th>评分人数</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-body">
+                        <!-- 结果将通过JS动态生成 -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 上传项目选项卡 -->
+            <div class="tab-content" id="upload-tab">
+                <h2>上传项目文档</h2>
+                <div class="file-upload">
+                    <p>支持上传Word格式的项目文档(.doc, .docx)</p>
+                    <input type="file" id="project-file" accept=".doc,.docx" onchange="handleFileSelect(event)">
+                    <p id="file-name"></p>
+                </div>
+                <div class="form-group">
+                    <label for="project-title">项目标题</label>
+                    <input type="text" id="project-title" placeholder="请输入项目标题">
+                </div>
+                <div class="form-group">
+                    <label for="project-description">项目简介</label>
+                    <input type="text" id="project-description" placeholder="请输入项目简介">
+                </div>
+                <button class="submit-btn" onclick="uploadProject()">上传项目</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟数据
+        const users = [
+            { username: 'expert1', password: 'pass123', name: '张教授' },
+            { username: 'expert2', password: 'pass123', name: '李教授' },
+            { username: 'expert3', password: 'pass123', name: '王教授' },
+            { username: 'admin', password: 'admin123', name: '管理员', isAdmin: true }
+        ];
+        
+        let projects = [
+            { id: 1, title: '基于人工智能的疾病预测研究', description: '利用机器学习算法进行疾病风险评估', fileName: 'project1.docx' },
+            { id: 2, title: '新型可降解材料的合成与应用', description: '环保材料在包装行业中的应用研究', fileName: 'project2.docx' },
+            { id: 3, title: '城市交通拥堵智能调控系统', description: '基于大数据的城市交通流量优化', fileName: 'project3.docx' },
+            { id: 4, title: '农业害虫生物防治技术研发', description: '非化学防治手段在有机农业中的应用', fileName: 'project4.docx' },
+            { id: 5, title: '能源互联网关键技术开发', description: '智能电网中的分布式能源调度算法', fileName: 'project5.docx' }
+        ];
+        
+        // 评分数据存储
+        let ratings = [
+            { projectId: 1, expertId: 'expert1', score: 85 },
+            { projectId: 2, expertId: 'expert1', score: 78 },
+            { projectId: 1, expertId: 'expert2', score: 90 },
+            { projectId: 3, expertId: 'expert2', score: 82 },
+            { projectId: 4, expertId: 'expert3', score: 88 }
+        ];
+        
+        let currentUser = null;
+        
+        // 登录功能
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            const user = users.find(u => u.username === username && u.password === password);
+            
+            if (user) {
+                currentUser = user;
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('dashboard-section').style.display = 'block';
+                document.getElementById('expert-name').textContent = user.name;
+                
+                // 生成项目列表
+                renderProjects();
+                // 生成评审结果
+                renderResults();
+                
+                // 如果是管理员，显示上传项目选项卡
+                if (user.isAdmin) {
+                    document.querySelector('.tab-btn[onclick="showTab(\'upload\')"]').style.display = 'block';
+                } else {
+                    document.querySelector('.tab-btn[onclick="showTab(\'upload\')"]').style.display = 'none';
+                }
+            } else {
+                alert('用户名或密码错误，请重试');
+            }
+        }
+        
+        // 退出登录
+        function logout() {
+            currentUser = null;
+            document.getElementById('login-section').style.display = 'block';
+            document.getElementById('dashboard-section').style.display = 'none';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+        
+        // 显示选项卡
+        function showTab(tabId) {
+            const tabs = document.querySelectorAll('.tab-content');
+            const buttons = document.querySelectorAll('.tab-btn');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+            document.querySelector(`.tab-btn[onclick="showTab('${tabId}')"]`).classList.add('active');
+        }
+        
+        // 渲染项目列表
+        function renderProjects() {
+            const projectList = document.getElementById('project-list');
+            projectList.innerHTML = '';
+            
+            projects.forEach(project => {
+                // 获取当前用户对该项目的评分
+                const existingRating = ratings.find(r => r.projectId === project.id && r.expertId === currentUser.username);
+                const currentScore = existingRating ? existingRating.score : '';
+                
+                const projectCard = document.createElement('div');
+                projectCard.className = 'project-card';
+                projectCard.innerHTML = `
+                    <div class="project-title">${project.title}</div>
+                    <div class="project-details">${project.description}</div>
+                    <div class="project-details">文件名: ${project.fileName}</div>
+                    <button class="submit-btn" style="margin-top: 10px; font-size: 14px; padding: 6px 12px;" onclick="viewProject(${project.id})">查看文档</button>
+                    <div class="rating-input">
+                        <label>评分 (0-100):</label>
+                        <input type="number" min="0" max="100" value="${currentScore}" id="rating-${project.id}" onchange="saveRating(${project.id}, this.value)">
+                    </div>
+                `;
+                projectList.appendChild(projectCard);
+            });
+        }
+        
+        // 保存单个项目评分
+        function saveRating(projectId, score) {
+            if (!currentUser) return;
+            
+            const scoreNum = parseInt(score);
+            if (isNaN(scoreNum) || scoreNum < 0 || scoreNum > 100) {
+                alert('请输入0-100之间的有效分数');
+                return;
+            }
+            
+            // 查找是否已有评分记录
+            const existingRatingIndex = ratings.findIndex(r => 
+                r.projectId === projectId && r.expertId === currentUser.username);
+            
+            if (existingRatingIndex >= 0) {
+                // 更新现有评分
+                ratings[existingRatingIndex].score = scoreNum;
+            } else {
+                // 添加新评分
+                ratings.push({
+                    projectId: projectId,
+                    expertId: currentUser.username,
+                    score: scoreNum
+                });
+            }
+            
+            // 更新结果显示
+            renderResults();
+        }
+        
+        // 提交所有评分
+        function submitRatings() {
+            let hasRatings = false;
+            
+            projects.forEach(project => {
+                const ratingInput = document.getElementById(`rating-${project.id}`);
+                if (ratingInput && ratingInput.value) {
+                    hasRatings = true;
+                    saveRating(project.id, ratingInput.value);
+                }
+            });
+            
+            if (hasRatings) {
+                alert('评分已成功提交！');
+                // 显示结果选项卡
+                showTab('results');
+            } else {
+                alert('请至少对一个项目进行评分');
+            }
+        }
+        
+        // 渲染评审结果
+        function renderResults() {
+            const resultsBody = document.getElementById('results-body');
+            resultsBody.innerHTML = '';
+            
+            // 计算每个项目的平均分
+            const projectResults = projects.map(project => {
+                const projectRatings = ratings.filter(r => r.projectId === project.id);
+                const totalScore = projectRatings.reduce((sum, rating) => sum + rating.score, 0);
+                const averageScore = projectRatings.length > 0 ? totalScore / projectRatings.length : 0;
+                
+                return {
+                    id: project.id,
+                    title: project.title,
+                    averageScore: averageScore.toFixed(2),
+                    ratingsCount: projectRatings.length
+                };
+            });
+            
+            // 按平均分降序排序
+            projectResults.sort((a, b) => b.averageScore - a.averageScore);
+            
+            // 生成结果表格
+            projectResults.forEach((result, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${result.title}</td>
+                    <td>${result.averageScore}</td>
+                    <td>${result.ratingsCount}</td>
+                    <td><button class="submit-btn" style="font-size: 14px; padding: 5px 10px;" onclick="viewProject(${result.id})">查看项目</button></td>
+                `;
+                resultsBody.appendChild(row);
+            });
+        }
+        
+        // 查看项目文档
+        function viewProject(projectId) {
+            const project = projects.find(p => p.id === projectId);
+            if (project) {
+                alert(`正在打开项目文档: ${project.fileName}\n\n在实际系统中，这里会打开Word文档进行查看。`);
+                // 在实际系统中，这里应该是打开文档的逻辑
+            }
+        }
+        
+        // 处理文件选择
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                document.getElementById('file-name').textContent = file.name;
+            }
+        }
+        
+        // 上传项目
+        function uploadProject() {
+            const fileInput = document.getElementById('project-file');
+            const title = document.getElementById('project-title').value;
+            const description = document.getElementById('project-description').value;
+            
+            if (!fileInput.files[0] || !title || !description) {
+                alert('请填写所有必要信息并上传文件');
+                return;
+            }
+            
+            const fileName = fileInput.files[0].name;
+            
+            // 验证文件格式
+            if (!fileName.endsWith('.doc') && !fileName.endsWith('.docx')) {
+                alert('请上传Word格式的文档 (.doc 或 .docx)');
+                return;
+            }
+            
+            // 创建新项目
+            const newProject = {
+                id: projects.length + 1,
+                title: title,
+                description: description,
+                fileName: fileName
+            };
+            
+            projects.push(newProject);
+            
+            // 重新渲染项目列表和结果
+            renderProjects();
+            renderResults();
+            
+            // 重置表单
+            document.getElementById('project-title').value = '';
+            document.getElementById('project-description').value = '';
+            document.getElementById('project-file').value = '';
+            document.getElementById('file-name').textContent = '';
+            
+            alert('项目已成功上传！');
+            showTab('projects');
+        }
+        
+        // 页面加载完成后自动填充一些测试账号信息（仅用于演示）
+        window.onload = function() {
+            document.getElementById('username').value = 'expert1';
+            document.getElementById('password').value = 'pass123';
+        };
+    </script>
+</body>
+</html>
